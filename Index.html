@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify - Web Player: Music for everyone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg-base: #000000;
+      --bg-surface: #121212;
+      --bg-highlight: #1a1a1a;
+      --bg-press: #0a0a0a;
+      --bg-elevated: #242424;
+      --spotify-green: #1ed760;
+      --spotify-green-hover: #1fdf64;
+      --text-base: #ffffff;
+      --text-subdued: #b3b3b3;
+      --border-subtle: rgba(255, 255, 255, 0.1);
+      --sidebar-width: 320px;
+      --player-height: 90px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-base);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Main Container Layout */
+    .app-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - var(--player-height));
+      padding: 8px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .nav-card, .library-card {
+      background-color: var(--bg-surface);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-base);
+      padding: 12px 8px;
+      text-decoration: none;
+    }
+    .brand-logo i {
+      font-size: 1.8rem;
+      color: var(--spotify-green);
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--text-subdued);
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: color 0.2s ease;
+      padding: 6px 8px;
+      border-radius: 4px;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--text-base);
+    }
+
+    .nav-item i {
+      font-size: 1.3rem;
+    }
+
+    .library-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .library-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0 16px 0;
+      color: var(--text-subdued);
+    }
+
+    .library-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .library-title:hover {
+      color: var(--text-base);
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-subdued);
+      font-size: 1rem;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      color: var(--text-base);
+      background-color: var(--bg-highlight);
+    }
+
+    .playlists-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .playlist-item:hover {
+      background-color: var(--bg-highlight);
+    }
+
+    .playlist-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 4px;
+      background: #282828;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: var(--text-subdued);
+      object-fit: cover;
+    }
+
+    .playlist-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+    }
+
+    .playlist-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .playlist-sub {
+      font-size: 0.8rem;
+      color: var(--text-subdued);
+    }
+
+    /* Main Canvas Content Area */
+    .main-content {
+      flex: 1;
+      background-color: var(--bg-surface);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .top-bar {
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: rgba(18, 18, 18, 0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background-color: #242424;
+      border-radius: 500px;
+      padding: 8px 16px;
+      width: 320px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: #ffffff;
+      background-color: #2a2a2a;
+    }
+
+    .search-box i {
+      color: var(--text-subdued);
+      margin-right: 10px;
+    }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+    }
+
+    .user-profile-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background-color: rgba(0,0,0,0.6);
+      padding: 4px 12px 4px 4px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .user-profile-btn:hover {
+      background-color: var(--bg-highlight);
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #535353;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .content-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 18px;
+      margin-bottom: 36px;
+    }
+
+    .music-card {
+      background: #181818;
+      padding: 16px;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .music-card:hover {
+      background-color: #282828;
+    }
+
+    .card-img-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .card-img-wrapper img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-play-btn {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--spotify-green);
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .music-card:hover .card-play-btn {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-play-btn:hover {
+      transform: scale(1.06);
+      background-color: var(--spotify-green-hover);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-subdued);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.3;
+    }
+
+    /* List Table Style */
+    .track-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .track-table th {
+      color: var(--text-subdued);
+      font-weight: 500;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 8px 16px;
+      text-align: left;
+    }
+
+    .track-row {
+      transition: background-color 0.2s;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .track-row:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .track-row td {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      color: var(--text-subdued);
+    }
+
+    .track-row td.track-title-cell {
+      color: var(--text-base);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .track-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .track-names {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .track-name-primary {
+      font-weight: 600;
+      color: var(--text-base);
+    }
+
+    .track-artist {
+      font-size: 0.8rem;
+      color: var(--text-subdued);
+    }
+
+    .like-action {
+      background: none;
+      border: none;
+      color: var(--text-subdued);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .like-action.active {
+      color: var(--spotify-green);
+    }
+
+    /* Bottom Player Bar */
+    .player-bar {
+      height: var(--player-height);
+      background-color: #000000;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      position: relative;
+      z-index: 30;
+    }
+
+    .current-track-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 30%;
+      min-width: 180px;
+    }
+
+    .track-cover {
+      width: 56px;
+      height: 56px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #282828;
+    }
+
+    .track-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .now-playing-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .now-playing-artist {
+      font-size: 0.75rem;
+      color: var(--text-subdued);
+    }
+
+    /* Player Controls */
+    .player-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 40%;
+      max-width: 600px;
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .control-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-subdued);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: color 0.2s, transform 0.1s;
+    }
+
+    .control-btn:hover {
+      color: var(--text-base);
+    }
+
+    .control-btn.active {
+      color: var(--spotify-green);
+    }
+
+    .play-pause-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #fff;
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: transform 0.1s;
+    }
+
+    .play-pause-btn:hover {
+      transform: scale(1.06);
+      background-color: #ffffff;
+    }
+
+    .progress-container {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .time-stamp {
+      font-size: 0.75rem;
+      color: var(--text-subdued);
+      min-width: 35px;
+      text-align: center;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      background: #4f4f4f;
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--text-base);
+      border-radius: 2px;
+      width: 0%;
+      position: relative;
+    }
+
+    .progress-container:hover .progress-fill {
+      background-color: var(--spotify-green);
+    }
+
+    .player-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      width: 30%;
+    }
+
+    .volume-bar {
+      width: 90px;
+      height: 4px;
+      background: #4f4f4f;
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .volume-fill {
+      height: 100%;
+      background: var(--text-base);
+      width: 80%;
+      border-radius: 2px;
+    }
+
+    /* Modal Styling for Auth */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0,0,0,0.85);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .auth-card {
+      background-color: var(--bg-surface);
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      padding: 36px;
+      box-shadow: 0 16px 32px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .auth-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .auth-header i {
+      font-size: 2.5rem;
+      color: var(--spotify-green);
+    }
+
+    .auth-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .form-control {
+      background-color: #242424;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      padding: 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #fff;
+    }
+
+    .btn-primary-btn {
+      background-color: var(--spotify-green);
+      color: #000;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 12px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .btn-primary-btn:hover {
+      background-color: var(--spotify-green-hover);
+      transform: scale(1.02);
+    }
+
+    .auth-switch {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-subdued);
+    }
+
+    .auth-switch span {
+      color: #fff;
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* Equalizer Animation */
+    .eq-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 14px;
+    }
+    .eq-bar {
+      width: 3px;
+      background-color: var(--spotify-green);
+      border-radius: 1px;
+      animation: eq 1s ease-in-out infinite alternate;
+    }
+    .eq-bar:nth-child(1) { height: 60%; animation-delay: 0.2s; }
+    .eq-bar:nth-child(2) { height: 100%; animation-delay: 0.4s; }
+    .eq-bar:nth-child(3) { height: 40%; animation-delay: 0.1s; }
+
+    @keyframes eq {
+      0% { height: 20%; }
+      100% { height: 100%; }
+    }
+
+    .playing .eq-bar {
+      animation-play-state: running;
+    }
+    .paused .eq-bar {
+      animation-play-state: paused;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 70px;
+      }
+      .brand-logo span, .nav-item span, .library-title span, .playlist-info {
+        display: none;
+      }
+      .search-box {
+        width: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Main Layout -->
+  <div class="app-layout">
+    
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar">
+      <div class="nav-card">
+        <a href="#" class="brand-logo">
+          <i class="fa-brands fa-spotify"></i>
+          <span>Spotify</span>
+        </a>
+        <ul class="nav-list">
+          <li class="nav-item active" onclick="switchTab('home')">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+          </li>
+          <li class="nav-item" onclick="switchTab('search')">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Cari</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="library-card">
+        <div class="library-header">
+          <div class="library-title">
+            <i class="fa-solid fa-book-bookmark"></i>
+            <span>Koleksi Kamu</span>
+          </div>
+          <button class="btn-icon" title="Buat Playlist Baru" onclick="createNewPlaylist()">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <div class="playlists-scroll" id="playlistList">
+          <!-- Playlist Item: Liked Songs -->
+          <div class="playlist-item" onclick="openPlaylist('liked')">
+            <div class="playlist-img" style="background: linear-gradient(135deg, #450af5, #c4efd9);">
+              <i class="fa-solid fa-heart" style="color: #fff;"></i>
+            </div>
+            <div class="playlist-info">
+              <span class="playlist-title">Lagu Yang Disukai</span>
+              <span class="playlist-sub" id="likedCount">Playlist • 0 lagu</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main View Canvas Area -->
+    <main class="main-content">
+      <!-- Top Navigation Header -->
+      <div class="top-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" placeholder="Ingin mendengarkan apa?" oninput="handleSearch(this.value)">
+        </div>
+
+        <div id="authActions">
+          <button class="btn-primary-btn" style="padding: 8px 24px; font-size: 0.9rem;" onclick="openAuthModal('login')">Masuk</button>
+        </div>
+      </div>
+
+      <!-- Main Dynamic Content Scrollable Body -->
+      <div class="content-body" id="contentBody">
+        
+        <!-- SECTION: Highlights Iwan Fals -->
+        <div class="section-title">
+          <span>Koleksi Spesial Iwan Fals</span>
+        </div>
+        <div class="cards-grid" id="iwanFalsGrid"></div>
+
+        <!-- SECTION: Highlights Tenxi -->
+        <div class="section-title">
+          <span>Hits Tenxi & Modern Rap</span>
+        </div>
+        <div class="cards-grid" id="tenxiGrid"></div>
+
+        <!-- SECTION: Semua Musik Tersedia -->
+        <div class="section-title">
+          <span>Semua Musik</span>
+        </div>
+        <div id="allTracksList"></div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom Fixed Audio Player Bar -->
+  <footer class="player-bar">
+    <!-- Left: Track Details -->
+    <div class="current-track-info">
+      <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100&auto=format&fit=crop" id="playerThumb" class="track-cover" alt="Track cover">
+      <div class="track-details">
+        <span class="now-playing-title" id="playerTitle">Pilih Lagu</span>
+        <span class="now-playing-artist" id="playerArtist">Artis</span>
+      </div>
+      <button class="like-action" id="playerLikeBtn" onclick="toggleCurrentLike()">
+        <i class="fa-regular fa-heart"></i>
+      </button>
+    </div>
+
+    <!-- Center: Playback Controls -->
+    <div class="player-center">
+      <div class="player-controls">
+        <button class="control-btn" id="shuffleBtn" onclick="toggleShuffle()" title="Acak">
+          <i class="fa-solid fa-shuffle"></i>
+        </button>
+        <button class="control-btn" onclick="prevTrack()" title="Sebelumnya">
+          <i class="fa-solid fa-backward-step"></i>
+        </button>
+        <button class="play-pause-btn" id="mainPlayBtn" onclick="togglePlayPause()" title="Putar/Jeda">
+          <i class="fa-solid fa-play"></i>
+        </button>
+        <button class="control-btn" onclick="nextTrack()" title="Berikutnya">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+        <button class="control-btn" id="repeatBtn" onclick="toggleRepeat()" title="Ulangi">
+          <i class="fa-solid fa-repeat"></i>
+        </button>
+      </div>
+
+      <div class="progress-container">
+        <span class="time-stamp" id="currentTime">0:00</span>
+        <div class="progress-bar" onclick="seekTrack(event)">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="time-stamp" id="totalDuration">0:00</span>
+      </div>
+    </div>
+
+    <!-- Right: Volume & Options -->
+    <div class="player-right">
+      <!-- Equalizer animation element -->
+      <div class="eq-container paused" id="eqAnimation" style="margin-right: 12px;">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+      <i class="fa-solid fa-volume-high" style="color: var(--text-subdued); cursor: pointer;" onclick="toggleMute()"></i>
+      <div class="volume-bar" onclick="setVolume(event)">
+        <div class="volume-fill" id="volumeFill"></div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Audio Element Hidden -->
+  <audio id="audioEngine"></audio>
+
+  <!-- Login/Register Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="auth-card">
+      <div class="auth-header">
+        <i class="fa-brands fa-spotify"></i>
+        <div class="auth-title" id="authModalTitle">Masuk ke Spotify</div>
+      </div>
+
+      <form onsubmit="handleAuthSubmit(event)">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Email atau Nama Pengguna</label>
+          <input type="text" class="form-control" id="authEmail" required placeholder="Nama atau email">
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Kata Sandi</label>
+          <input type="password" class="form-control" id="authPassword" required placeholder="Kata sandi">
+        </div>
+
+        <button type="submit" class="btn-primary-btn" style="width: 100%;" id="authSubmitBtn">Masuk</button>
+      </form>
+
+      <div class="auth-switch" id="authSwitchText">
+        Belum punya akun? <span onclick="switchAuthMode('register')">Daftar Spotify</span>
+      </div>
+      <div style="text-align: center; margin-top: -10px;">
+        <span style="color: var(--text-subdued); font-size: 0.8rem; cursor: pointer;" onclick="closeAuthModal()">Tutup</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Database Lagu Lengkap
+    const trackDatabase = [
+      // Tenxi
+      {
+        id: 't1',
+        title: 'Garam & Madu (Sakit Dadaku)',
+        artist: 'Tenxi',
+        album: 'Garam & Madu Single',
+        cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        duration: '3:45'
+      },
+      {
+        id: 't2',
+        title: 'Kasih Aba Aba',
+        artist: 'Tenxi',
+        album: 'Single Hits',
+        cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        duration: '4:12'
+      },
+      {
+        id: 't3',
+        title: 'mejikuhibiniu',
+        artist: 'Tenxi',
+        album: 'Colors',
+        cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        duration: '3:20'
+      },
+
+      // Iwan Fals
+      {
+        id: 'i1',
+        title: 'Bento',
+        artist: 'Iwan Fals',
+        album: 'Swami',
+        cover: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+        duration: '5:58'
+      },
+      {
+        id: 'i2',
+        title: 'Bongkar',
+        artist: 'Iwan Fals',
+        album: 'Swami II',
+        cover: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+        duration: '4:30'
+      },
+      {
+        id: 'i3',
+        title: 'Ibu',
+        artist: 'Iwan Fals',
+        album: '1910',
+        cover: 'https://images.unsplash.com/photo-1445985543470-41fba5c3144a?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+        duration: '5:10'
+      },
+      {
+        id: 'i4',
+        title: 'Yang Terlupakan',
+        artist: 'Iwan Fals',
+        album: 'Sarjana Muda',
+        cover: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+        duration: '4:50'
+      },
+      {
+        id: 'i5',
+        title: 'Surat Buat Wakil Rakyat',
+        artist: 'Iwan Fals',
+        album: 'Wakil Rakyat',
+        cover: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+        duration: '4:15'
+      },
+
+      // Popular Indonesia & Internasional
+      {
+        id: 'p1',
+        title: 'Dan...',
+        artist: 'Sheila On 7',
+        album: 'Sheila On 7',
+        cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
+        duration: '4:46'
+      },
+      {
+        id: 'p2',
+        title: 'Hati-Hati di Jalan',
+        artist: 'Tulus',
+        album: 'Manusia',
+        cover: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
+        duration: '4:02'
+      },
+      {
+        id: 'p3',
+        title: 'Crito Mustahil',
+        artist: 'Denny Caknan',
+        album: 'Single Koplo',
+        cover: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3',
+        duration: '4:20'
+      },
+      {
+        id: 'p4',
+        title: 'Blinding Lights',
+        artist: 'The Weeknd',
+        album: 'After Hours',
+        cover: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&auto=format&fit=crop',
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
+        duration: '3:20'
+      }
+    ];
+
+    // State Application Variables
+    let currentUser = null;
+    let likedTrackIds = new Set();
+    let userPlaylists = [];
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+    let isRepeat = false;
+    let authMode = 'login';
+
+    // Audio Engine References
+    const audio = document.getElementById('audioEngine');
+    const playBtn = document.getElementById('mainPlayBtn');
+    const progressFill = document.getElementById('progressFill');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalDurationEl = document.getElementById('totalDuration');
+    const eqAnim = document.getElementById('eqAnimation');
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      renderGrids();
+      loadTrack(0, false);
+      setupAudioListeners();
+    });
+
+    // Render Highlights & Dynamic Song Lists
+    function renderGrids() {
+      // Iwan Fals
+      const iwanList = trackDatabase.filter(t => t.artist === 'Iwan Fals');
+      const iwanContainer = document.getElementById('iwanFalsGrid');
+      iwanContainer.innerHTML = iwanList.map(track => createCardHTML(track)).join('');
+
+      // Tenxi
+      const tenxiList = trackDatabase.filter(t => t.artist === 'Tenxi');
+      const tenxiContainer = document.getElementById('tenxiGrid');
+      tenxiContainer.innerHTML = tenxiList.map(track => createCardHTML(track)).join('');
+
+      // All Tracks List
+      renderTrackTable(trackDatabase, document.getElementById('allTracksList'));
+    }
+
+    function createCardHTML(track) {
+      const idx = trackDatabase.findIndex(t => t.id === track.id);
+      return `
+        <div class="music-card" onclick="playTrackByIndex(${idx})">
+          <div class="card-img-wrapper">
+            <img src="${track.cover}" alt="${track.title}">
+            <button class="card-play-btn"><i class="fa-solid fa-play"></i></button>
+          </div>
+          <div class="card-title">${track.title}</div>
+          <div class="card-subtitle">${track.artist} • ${track.album}</div>
+        </div>
+      `;
+    }
+
+    function renderTrackTable(tracks, container) {
+      if (tracks.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-subdued); padding: 20px 0;">Tidak ada lagu ditemukan.</div>';
+        return;
+      }
+
+      let html = `
+        <table class="track-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Judul</th>
+              <th>Album</th>
+              <th style="width: 50px;"><i class="fa-regular fa-clock"></i></th>
+              <th style="width: 40px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      tracks.forEach((track, index) => {
+        const globalIdx = trackDatabase.findIndex(t => t.id === track.id);
+        const isLiked = likedTrackIds.has(track.id);
+
+        html += `
+          <tr class="track-row" onclick="playTrackByIndex(${globalIdx})">
+            <td>${index + 1}</td>
+            <td class="track-title-cell">
+              <img src="${track.cover}" class="track-thumb" alt="cover">
+              <div class="track-names">
+                <span class="track-name-primary">${track.title}</span>
+                <span class="track-artist">${track.artist}</span>
+              </div>
+            </td>
+            <td>${track.album}</td>
+            <td>${track.duration}</td>
+            <td onclick="event.stopPropagation()">
+              <button class="like-action ${isLiked ? 'active' : ''}" onclick="toggleLike('${track.id}')">
+                <i class="${isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
+    // Search Feature
+    function handleSearch(query) {
+      const filtered = trackDatabase.filter(t => 
+        t.title.toLowerCase().includes(query.toLowerCase()) ||
+        t.artist.toLowerCase().includes(query.toLowerCase()) ||
+        t.album.toLowerCase().includes(query.toLowerCase())
+      );
+
+      const content = document.getElementById('contentBody');
+      if (query.trim() === '') {
+        content.innerHTML = `
+          <div class="section-title"><span>Koleksi Spesial Iwan Fals</span></div>
+          <div class="cards-grid" id="iwanFalsGrid"></div>
+          <div class="section-title"><span>Hits Tenxi & Modern Rap</span></div>
+          <div class="cards-grid" id="tenxiGrid"></div>
+          <div class="section-title"><span>Semua Musik</span></div>
+          <div id="allTracksList"></div>
+        `;
+        renderGrids();
+      } else {
+        content.innerHTML = `
+          <div class="section-title"><span>Hasil Pencarian: "${query}"</span></div>
+          <div id="searchResultsList"></div>
+        `;
+        renderTrackTable(filtered, document.getElementById('searchResultsList'));
+      }
+    }
+
+    // Audio Playback Engine Functions
+    function loadTrack(index, autoPlay = true) {
+      currentTrackIndex = index;
+      const track = trackDatabase[currentTrackIndex];
+
+      audio.src = track.url;
+      document.getElementById('playerThumb').src = track.cover;
+      document.getElementById('playerTitle').textContent = track.title;
+      document.getElementById('playerArtist').textContent = track.artist;
+
+      updateLikeButtonUI();
+
+      if (autoPlay) {
+        audio.play().then(() => {
+          isPlaying = true;
+          updatePlayPauseIcon();
+        }).catch(e => console.log('Audio autoplay prevented:', e));
+      } else {
+        isPlaying = false;
+        updatePlayPauseIcon();
+      }
+    }
+
+    function playTrackByIndex(index) {
+      loadTrack(index, true);
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+      } else {
+        audio.play();
+        isPlaying = true;
+      }
+      updatePlayPauseIcon();
+    }
+
+    function updatePlayPauseIcon() {
+      if (isPlaying) {
+        playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        eqAnim.classList.remove('paused');
+        eqAnim.classList.add('playing');
+      } else {
+        playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        eqAnim.classList.remove('playing');
+        eqAnim.classList.add('paused');
+      }
+    }
+
+    function nextTrack() {
+      if (isShuffle) {
+        currentTrackIndex = Math.floor(Math.random() * trackDatabase.length);
+      } else {
+        currentTrackIndex = (currentTrackIndex + 1) % trackDatabase.length;
+      }
+      loadTrack(currentTrackIndex, true);
+    }
+
+    function prevTrack() {
+      currentTrackIndex = (currentTrackIndex - 1 + trackDatabase.length) % trackDatabase.length;
+      loadTrack(currentTrackIndex, true);
+    }
+
+    function setupAudioListeners() {
+      audio.addEventListener('timeupdate', () => {
+        if (audio.duration) {
+          const pct = (audio.currentTime / audio.duration) * 100;
+          progressFill.style.width = `${pct}%`;
+          currentTimeEl.textContent = formatTime(audio.currentTime);
+          totalDurationEl.textContent = formatTime(audio.duration);
+        }
+      });
+
+      audio.addEventListener('ended', () => {
+        if (isRepeat) {
+          audio.currentTime = 0;
+          audio.play();
+        } else {
+          nextTrack();
+        }
+      });
+    }
+
+    function seekTrack(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickPos = (e.clientX - rect.left) / rect.width;
+      audio.currentTime = clickPos * audio.duration;
+    }
+
+    function setVolume(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickPos = (e.clientX - rect.left) / rect.width;
+      audio.volume = Math.max(0, Math.min(1, clickPos));
+      document.getElementById('volumeFill').style.width = `${clickPos * 100}%`;
+    }
+
+    function toggleMute() {
+      audio.muted = !audio.muted;
+    }
+
+    function toggleShuffle() {
+      isShuffle = !isShuffle;
+      document.getElementById('shuffleBtn').classList.toggle('active', isShuffle);
+    }
+
+    function toggleRepeat() {
+      isRepeat = !isRepeat;
+      document.getElementById('repeatBtn').classList.toggle('active', isRepeat);
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    // Liked Tracks System
+    function toggleLike(trackId) {
+      if (likedTrackIds.has(trackId)) {
+        likedTrackIds.delete(trackId);
+      } else {
+        likedTrackIds.add(trackId);
+      }
+      document.getElementById('likedCount').textContent = `Playlist • ${likedTrackIds.size} lagu`;
+      renderGrids();
+      updateLikeButtonUI();
+    }
+
+    function toggleCurrentLike() {
+      const currentTrack = trackDatabase[currentTrackIndex];
+      toggleLike(currentTrack.id);
+    }
+
+    function updateLikeButtonUI() {
+      const currentTrack = trackDatabase[currentTrackIndex];
+      const btn = document.getElementById('playerLikeBtn');
+      if (likedTrackIds.has(currentTrack.id)) {
+        btn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+        btn.classList.add('active');
+      } else {
+        btn.innerHTML = '<i class="fa-regular fa-heart"></i>';
+        btn.classList.remove('active');
+      }
+    }
+
+    // Playlist Management
+    function createNewPlaylist() {
+      if (!currentUser) {
+        alert('Silakan login terlebih dahulu untuk membuat playlist.');
+        openAuthModal('login');
+        return;
+      }
+      const title = prompt('Masukkan nama playlist baru:', `Playlist Saya #${userPlaylists.length + 1}`);
+      if (title) {
+        userPlaylists.push({ title, tracks: [] });
+        renderPlaylistsUI();
+      }
+    }
+
+    function renderPlaylistsUI() {
+      const list = document.getElementById('playlistList');
+      list.innerHTML = `
+        <div class="playlist-item" onclick="openPlaylist('liked')">
+          <div class="playlist-img" style="background: linear-gradient(135deg, #450af5, #c4efd9);">
+            <i class="fa-solid fa-heart" style="color: #fff;"></i>
+          </div>
+          <div class="playlist-info">
+            <span class="playlist-title">Lagu Yang Disukai</span>
+            <span class="playlist-sub" id="likedCount">Playlist • ${likedTrackIds.size} lagu</span>
+          </div>
+        </div>
+      `;
+
+      userPlaylists.forEach((pl) => {
+        list.innerHTML += `
+          <div class="playlist-item">
+            <div class="playlist-img">
+              <i class="fa-solid fa-music"></i>
+            </div>
+            <div class="playlist-info">
+              <span class="playlist-title">${pl.title}</span>
+              <span class="playlist-sub">Playlist • ${pl.tracks.length} lagu</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function openPlaylist(type) {
+      if (type === 'liked') {
+        const likedTracks = trackDatabase.filter(t => likedTrackIds.has(t.id));
+        const content = document.getElementById('contentBody');
+        content.innerHTML = `
+          <div class="section-title"><span>Lagu Yang Disukai</span></div>
+          <div id="likedTracksContainer"></div>
+        `;
+        renderTrackTable(likedTracks, document.getElementById('likedTracksContainer'));
+      }
+    }
+
+    // Navigation Switcher
+    function switchTab(tab) {
+      if (tab === 'home') {
+        document.getElementById('searchInput').value = '';
+        handleSearch('');
+      } else if (tab === 'search') {
+        document.getElementById('searchInput').focus();
+      }
+    }
+
+    // Authentication System (Modal)
+    function openAuthModal(mode = 'login') {
+      authMode = mode;
+      document.getElementById('authModal').classList.add('active');
+      const title = document.getElementById('authModalTitle');
+      const btn = document.getElementById('authSubmitBtn');
+      const switchText = document.getElementById('authSwitchText');
+
+      if (mode === 'login') {
+        title.textContent = 'Masuk ke Spotify';
+        btn.textContent = 'Masuk';
+        switchText.innerHTML = `Belum punya akun? <span onclick="switchAuthMode('register')">Daftar Spotify</span>`;
+      } else {
+        title.textContent = 'Daftar Akun Gratis';
+        btn.textContent = 'Daftar';
+        switchText.innerHTML = `Sudah punya akun? <span onclick="switchAuthMode('login')">Masuk</span>`;
+      }
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.remove('active');
+    }
+
+    function switchAuthMode(mode) {
+      openAuthModal(mode);
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value;
+      currentUser = { name: email.split('@')[0], email: email };
+
+      document.getElementById('authActions').innerHTML = `
+        <div class="user-profile-btn" onclick="logout()">
+          <div class="user-avatar">${currentUser.name[0].toUpperCase()}</div>
+          <span style="font-size: 0.85rem; font-weight: 700;">${currentUser.name}</span>
+          <i class="fa-solid fa-right-from-bracket" style="font-size: 0.8rem; margin-left: 4px;" title="Keluar"></i>
+        </div>
+      `;
+
+      closeAuthModal();
+      alert(`Berhasil ${authMode === 'login' ? 'masuk' : 'mendaftar'} sebagai ${currentUser.name}!`);
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('authActions').innerHTML = `
+        <button class="btn-primary-btn" style="padding: 8px 24px; font-size: 0.9rem;" onclick="openAuthModal('login')">Masuk</button>
+      `;
+    }
+  </script>
+</body>
+</html>
